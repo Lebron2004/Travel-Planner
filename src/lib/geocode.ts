@@ -64,15 +64,25 @@ export function photonToDestination(f: PhotonFeature): Destination | null {
  * Place search via Photon (komoot), which is free, keyless and, unlike
  * Nominatim's public server, allows search-as-you-type.
  */
+const cache = new Map<string, Destination[]>();
+const cacheKey = (query: string) => query.trim().toLowerCase().replace(/\s+/g, ' ');
+
+/** Results we already fetched for this query, so backspacing or retyping is instant. */
+export function cachedDestinations(query: string): Destination[] | undefined {
+  return cache.get(cacheKey(query));
+}
+
 export async function searchDestinations(query: string, signal?: AbortSignal): Promise<Destination[]> {
   if (query.trim().length < 2) return [];
+  const hit = cachedDestinations(query);
+  if (hit) return hit;
   // Only places (cities, towns, countries…), not every shop or street that starts with "new".
   const params = new URLSearchParams({ q: query, limit: '10', lang: 'en', osm_tag: 'place' });
   const res = await fetch(`https://photon.komoot.io/api/?${params}`, { signal });
   if (!res.ok) throw new Error(`Search failed (${res.status})`);
   const json: { features?: PhotonFeature[] } = await res.json();
   const seen = new Set<string>();
-  return (json.features ?? [])
+  const results = (json.features ?? [])
     .map(photonToDestination)
     .filter((d): d is Destination => {
       if (!d) return false;
@@ -82,4 +92,6 @@ export async function searchDestinations(query: string, signal?: AbortSignal): P
       return true;
     })
     .slice(0, 6);
+  cache.set(cacheKey(query), results);
+  return results;
 }

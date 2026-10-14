@@ -3,6 +3,7 @@ import { FilterBar } from './components/FilterBar';
 import { MapView } from './components/MapView';
 import { PlaceCard, cardDomId } from './components/PlaceCard';
 import { SearchBox } from './components/SearchBox';
+import { ThemeToggle } from './components/ThemeToggle';
 import { TripPanel } from './components/TripPanel';
 import { useDestinationSummary, usePlaces, useRoutes } from './hooks';
 import { CATEGORY_META } from './lib/categories';
@@ -104,6 +105,7 @@ export default function App() {
   if (!dest) {
     return (
       <main className="landing">
+        <ThemeToggle />
         <div className="landing-inner">
           <p className="eyebrow">🧭 Wayfinder</p>
           <h1>
@@ -134,6 +136,7 @@ export default function App() {
           🧭 <span>Wayfinder</span>
         </button>
         <SearchBox onSelect={goTo} size="small" placeholder="Go somewhere else…" />
+        <ThemeToggle />
       </header>
 
       <div className="layout">
