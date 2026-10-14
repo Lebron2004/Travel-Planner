@@ -110,7 +110,7 @@ export default function App() {
             Where to <em>next?</em>
           </h1>
           <p className="lede">
-            Type in a city, town or park. We'll show you what to see, where to eat, the hidden spots most people miss, places to stay, and a
+            Start typing a city or town. We'll show you what to see, where to eat, the hidden spots most people miss, places to stay, and a
             route to follow on the map.
           </p>
           <SearchBox onSelect={goTo} autoFocus />
