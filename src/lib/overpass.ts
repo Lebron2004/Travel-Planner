@@ -6,7 +6,19 @@ import type { Category, LatLon, Place } from './types';
 const ENDPOINTS = [
   'https://overpass-api.de/api/interpreter',
   'https://overpass.private.coffee/api/interpreter',
+  'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
 ];
+
+/** Give up on a busy mirror after this long and try the next one. */
+const TIMEOUT_MS = 20000;
+
+/** Overpass "(south,west,north,east)" box around a point. Much faster to query than `around`. */
+export function bboxAround(center: LatLon, radius: number): string {
+  const dLat = radius / 111320;
+  const dLon = radius / (111320 * Math.cos((center.lat * Math.PI) / 180));
+  const f = (n: number) => n.toFixed(5);
+  return `(${f(center.lat - dLat)},${f(center.lon - dLon)},${f(center.lat + dLat)},${f(center.lon + dLon)})`;
+}
 
 /** How many results per tab we ask Overpass for. */
 const LIMITS: Record<Category, number> = { sights: 150, food: 250, gems: 150, stays: 120 };
@@ -17,10 +29,10 @@ const LIMITS: Record<Category, number> = { sights: 150, food: 250, gems: 150, st
  */
 export function buildOverpassQuery(center: LatLon, radius: number): string {
   const r = Math.round(radius);
-  const around = `(around:${r},${center.lat},${center.lon})`;
-  // Food is dense; a tighter circle keeps it walkable and the query fast.
-  const near = `(around:${Math.min(r, 3000)},${center.lat},${center.lon})`;
-  return `[out:json][timeout:30];
+  const around = bboxAround(center, r);
+  // Food is dense; a tighter box keeps it walkable and the query fast.
+  const near = bboxAround(center, Math.min(r, 3000));
+  return `[out:json][timeout:25];
 (
   nwr["tourism"~"^(museum|gallery|attraction|zoo|aquarium|theme_park)$"]["name"]${around};
   nwr["historic"~"^(castle|palace|fort|monument|city_gate)$"]["name"]${around};
@@ -112,14 +124,32 @@ export function rankPlaces(places: Place[]): Place[] {
   });
 }
 
+async function postWithTimeout(url: string, body: URLSearchParams, outer?: AbortSignal) {
+  const ctrl = new AbortController();
+  const abort = () => ctrl.abort();
+  outer?.addEventListener('abort', abort);
+  const timer = setTimeout(abort, TIMEOUT_MS);
+  try {
+    const res = await fetch(url, { method: 'POST', body, signal: ctrl.signal });
+    if (!res.ok) throw new Error(`Overpass ${res.status}`);
+    const json = await res.json();
+    // Overpass reports its own timeouts in a 200 response with a "remark".
+    if (!json.elements?.length && /timed out|runtime error/i.test(json.remark ?? '')) {
+      throw new Error('Overpass timed out');
+    }
+    return json;
+  } finally {
+    clearTimeout(timer);
+    outer?.removeEventListener('abort', abort);
+  }
+}
+
 export async function fetchPlaces(center: LatLon, radius: number, signal?: AbortSignal): Promise<Place[]> {
   const body = new URLSearchParams({ data: buildOverpassQuery(center, radius) });
   let lastError: unknown;
   for (const url of ENDPOINTS) {
     try {
-      const res = await fetch(url, { method: 'POST', body, signal });
-      if (!res.ok) throw new Error(`Overpass ${res.status}`);
-      return rankPlaces(parseOverpass(await res.json(), center));
+      return rankPlaces(parseOverpass(await postWithTimeout(url, body, signal), center));
     } catch (err) {
       if (signal?.aborted) throw err;
       lastError = err;

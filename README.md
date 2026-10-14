@@ -28,11 +28,11 @@ Everything is free and needs no API keys:
 | What | Source |
 | --- | --- |
 | Destination search | [Photon](https://photon.komoot.io) (OpenStreetMap) |
-| Places, food, gems, stays | [Overpass API](https://overpass-api.de) (OpenStreetMap) |
+| Places, food, gems, stays | [Overpass API](https://overpass-api.de) (OpenStreetMap), with two backup mirrors |
 | Photos & descriptions | [Wikidata](https://www.wikidata.org) / Wikimedia Commons |
 | City intro | Wikipedia REST API |
 | Routes | [FOSSGIS OSRM](https://routing.openstreetmap.de) (walk / bike / car) |
-| Map tiles | CARTO Voyager on OpenStreetMap data |
+| Map tiles | [OpenStreetMap](https://www.openstreetmap.org) standard tiles |
 
 Prices are estimated from the kind of place (a hostel is `$`, a 4–5★ hotel is `$$$`) because OpenStreetMap doesn't carry prices.
 Live hotel prices and availability would need a partner key (for example Booking.com Affiliate or Amadeus Hotel Search); until then

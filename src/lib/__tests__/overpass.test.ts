@@ -1,13 +1,39 @@
-import { describe, expect, it } from 'vitest';
-import { buildOverpassQuery, rankPlaces } from '../overpass';
-import { CENTER, samplePlaces } from './fixtures';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { bboxAround, buildOverpassQuery, fetchPlaces, rankPlaces } from '../overpass';
+import { CENTER, OVERPASS_SAMPLE, samplePlaces } from './fixtures';
 
 describe('buildOverpassQuery', () => {
   it('asks for every tab with its own cap and a tighter food radius', () => {
     const q = buildOverpassQuery(CENTER, 6000);
     for (const set of ['.sights out', '.food out', '.gems out', '.stays out']) expect(q).toContain(set);
-    expect(q).toContain(`(around:6000,${CENTER.lat},${CENTER.lon})`);
-    expect(q).toContain(`(around:3000,${CENTER.lat},${CENTER.lon})`);
+    expect(q).toContain(bboxAround(CENTER, 6000));
+    expect(q).toContain(bboxAround(CENTER, 3000));
+    expect(q).not.toContain('around:');
+  });
+
+  it('builds a south,west,north,east box of the right size', () => {
+    expect(bboxAround({ lat: 0, lon: 0 }, 1113.2)).toBe('(-0.01000,-0.01000,0.01000,0.01000)');
+  });
+});
+
+describe('fetchPlaces', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('moves on to the next mirror when one fails or times out', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response('busy', { status: 429 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ elements: [], remark: 'runtime error: Query timed out' })))
+      .mockResolvedValueOnce(new Response(JSON.stringify(OVERPASS_SAMPLE)));
+    vi.stubGlobal('fetch', fetchMock);
+    const places = await fetchPlaces(CENTER, 3000);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(places.length).toBeGreaterThan(0);
+  });
+
+  it('gives up with an error when every mirror fails', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('down', { status: 504 })));
+    await expect(fetchPlaces(CENTER, 3000)).rejects.toThrow('Overpass 504');
   });
 });
 
