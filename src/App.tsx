@@ -43,6 +43,13 @@ export default function App() {
   const [movedArea, setMovedArea] = useState<{ center: LatLon; radius: number } | null>(null);
 
   const { status, places, error, retry } = usePlaces(dest);
+  const [slow, setSlow] = useState(false);
+  useEffect(() => {
+    setSlow(false);
+    if (status !== 'loading') return;
+    const t = setTimeout(() => setSlow(true), 8000);
+    return () => clearTimeout(t);
+  }, [status, dest]);
   const summary = useDestinationSummary(dest?.name);
   const routes = useRoutes(tripDays, mode);
 
@@ -253,7 +260,9 @@ export default function App() {
               Search this area
             </button>
           )}
-          {status === 'loading' && <div className="map-loading">Finding places…</div>}
+          {status === 'loading' && (
+            <div className="map-loading">{slow ? 'Still looking… the free map servers are busy' : 'Finding places…'}</div>
+          )}
         </section>
       </div>
     </div>
