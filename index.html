@@ -9,6 +9,13 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script>
+      // Apply a saved light/dark choice before first paint so the page doesn't flash.
+      try {
+        var t = localStorage.getItem('wayfinder-theme');
+        if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+      } catch (e) {}
+    </script>
     <title>Wayfinder · Trip Planner</title>
   </head>
   <body>
