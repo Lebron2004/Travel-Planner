@@ -50,6 +50,15 @@ describe('searchDestinations', () => {
     expect(results).toHaveLength(6);
   });
 
+  it('answers a repeated query from the cache', async () => {
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({ features: [feature({ name: 'Newark', countrycode: 'US', osm_key: 'place', osm_value: 'city' })] })));
+    vi.stubGlobal('fetch', fetchMock);
+    await searchDestinations('newark');
+    const again = await searchDestinations('  Newark ');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(again[0].name).toBe('Newark');
+  });
+
   it('does not search for a single letter', async () => {
     expect(await searchDestinations('n')).toEqual([]);
   });

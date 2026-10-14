@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { searchDestinations } from '../lib/geocode';
+import { cachedDestinations, searchDestinations } from '../lib/geocode';
 import type { Destination } from '../lib/types';
 
 interface Props {
@@ -21,11 +21,23 @@ export function SearchBox({ onSelect, placeholder = 'Where are you going?', size
   useEffect(() => {
     if (query.trim().length < 2) {
       setResults([]);
+      setLoading(false);
       return;
     }
+    const cached = cachedDestinations(query);
+    if (cached) {
+      setResults(cached);
+      setActive(0);
+      setLoading(false);
+      return;
+    }
+    // While the server answers, keep showing earlier suggestions that still match.
+    const q = query.trim().toLowerCase();
+    setResults((prev) => prev.filter((r) => r.name.toLowerCase().startsWith(q)));
+    setActive(0);
+    setLoading(true);
     const ctrl = new AbortController();
     const timer = setTimeout(() => {
-      setLoading(true);
       searchDestinations(query, ctrl.signal)
         .then((r) => {
           setResults(r);
@@ -34,7 +46,7 @@ export function SearchBox({ onSelect, placeholder = 'Where are you going?', size
         })
         .catch(() => !ctrl.signal.aborted && setError("Couldn't reach place search. Try again in a moment."))
         .finally(() => !ctrl.signal.aborted && setLoading(false));
-    }, 200);
+    }, 150);
     return () => {
       clearTimeout(timer);
       ctrl.abort();
