@@ -18,7 +18,8 @@ npm test         # unit tests
 npm run build    # static site in dist/
 ```
 
-The build is a plain static site, so `dist/` can be hosted anywhere (GitHub Pages, Netlify, Vercel).
+The build is a plain static site. Every push to `main` deploys it to GitHub Pages at
+https://lebron2004.github.io/Travel-Planner/ (one-time setup: repo **Settings → Pages → Source: GitHub Actions**).
 
 ## Where the data comes from
 
