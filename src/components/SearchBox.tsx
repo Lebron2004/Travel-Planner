@@ -34,7 +34,7 @@ export function SearchBox({ onSelect, placeholder = 'Where are you going?', size
         })
         .catch(() => !ctrl.signal.aborted && setError("Couldn't reach place search. Try again in a moment."))
         .finally(() => !ctrl.signal.aborted && setLoading(false));
-    }, 250);
+    }, 200);
     return () => {
       clearTimeout(timer);
       ctrl.abort();
@@ -90,9 +90,10 @@ export function SearchBox({ onSelect, placeholder = 'Where are you going?', size
         }}
       />
       {loading && <span className="search-spinner" aria-hidden />}
-      {open && (results.length > 0 || error) && (
+      {open && query.trim().length >= 2 && (results.length > 0 || error || loading) && (
         <ul className="search-results" role="listbox">
           {error && <li className="search-error">{error}</li>}
+          {loading && results.length === 0 && !error && <li className="search-status">Searching…</li>}
           {results.map((r, i) => (
             <li
               key={`${r.name}-${r.lat}-${r.lon}`}
